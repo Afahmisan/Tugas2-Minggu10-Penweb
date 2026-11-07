@@ -75,8 +75,56 @@ const createProduct = async (req, res) => {
     }
 };
 
+const updateProduct = async (req, res) => {
+    try {
+        const rawId = req.body?.id ?? req.params.id;
+        const { name, price } = req.body;
+
+        if (rawId === undefined || !name || typeof name !== "string" || name.trim() === "" || price === undefined) {
+            return res.status(400).json({
+                message: "id, nama, atau harga tidak ditemukan",
+            });
+        }
+
+        const id = parseInt(rawId, 10);
+        const parsedPrice = Number(price);
+
+        if (isNaN(id) || isNaN(parsedPrice) || parsedPrice < 0) {
+            return res.status(400).json({
+                message: "ID dan harga harus berupa angka yang valid",
+            });
+        }
+
+        const existingProduct = await prisma.product.findUnique({
+            where: { id },
+        });
+
+        if (!existingProduct) {
+            return res.status(404).json({
+                message: "Produk tidak ditemukan",
+            });
+        }
+
+        const updatedProduct = await prisma.product.update({
+            where: { id },
+            data: {
+                name: name.trim(),
+                price: parsedPrice,
+            },
+        });
+
+        return res.status(200).json(updatedProduct);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Terjadi kesalahan pada server",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     getAllProducts,
     getProductbyID,
     createProduct,
+    updateProduct,
 };
