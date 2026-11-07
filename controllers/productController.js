@@ -42,14 +42,37 @@ const getProductbyID = async (req, res) => {
     }
 };
 
-const createProduct = (req, res) => {
-    const { name, price } = req.body;
+const createProduct = async (req, res) => {
+    try {
+        const { name, price } = req.body;
 
-    if (!name || price === undefined) {
-        return res.status(400).json({ message: "nama atau harga tidak ditemukan" });
+        if (!name || typeof name !== "string" || name.trim() === "" || price === undefined) {
+            return res.status(400).json({
+                message: "nama atau harga tidak ditemukan",
+            });
+        }
+
+        const parsedPrice = Number(price);
+        if (isNaN(parsedPrice) || parsedPrice < 0) {
+            return res.status(400).json({
+                message: "Harga harus berupa angka yang valid",
+            });
+        }
+
+        const newProduct = await prisma.product.create({
+            data: {
+                name: name.trim(),
+                price: parsedPrice,
+            },
+        });
+
+        return res.status(201).json(newProduct);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Terjadi kesalahan pada server",
+            error: error.message,
+        });
     }
-
-    return res.status(201).json({ name, price: Number(price) });
 };
 
 module.exports = {
