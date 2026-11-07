@@ -1,45 +1,56 @@
-let products = [
-  { id: 1, name: "Buku", price: 15000 },
-  { id: 2, name: "Pulpen", price: 5000 },
-];
+const prisma = require("../lib/prisma");
 
-
-const getAllProducts = (req, res) => {
-    return res.status(200).json(products);
-}
-
-const getProductbyID = (req, res) => {
-    const id = parseInt(req.params.id, 10);
-    const product = products.find((p) => p.id == id);
-
-
-    if(!product){
-        return res.status(404).json(
-            {message: 'Produk tidak ditemukan'}
-        );
+const getAllProducts = async (req, res) => {
+    try {
+        const products = await prisma.product.findMany({
+            orderBy: { id: "asc" },
+        });
+        return res.status(200).json(products);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Terjadi kesalahan pada server",
+            error: error.message,
+        });
     }
+};
 
-    return res.status(200).json(product);
-}
+const getProductbyID = async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (isNaN(id)) {
+            return res.status(400).json({
+                message: "ID harus berupa angka",
+            });
+        }
+
+        const product = await prisma.product.findUnique({
+            where: { id },
+        });
+
+        if (!product) {
+            return res.status(404).json({
+                message: "Produk tidak ditemukan",
+            });
+        }
+
+        return res.status(200).json(product);
+    } catch (error) {
+        return res.status(500).json({
+            message: "Terjadi kesalahan pada server",
+            error: error.message,
+        });
+    }
+};
 
 const createProduct = (req, res) => {
-    const {name, price} = req.body;
+    const { name, price } = req.body;
 
-    if(!name || price === undefined){
-        return res.status(400).json({message: 'nama atau harga tidak ditemukan'});
+    if (!name || price === undefined) {
+        return res.status(400).json({ message: "nama atau harga tidak ditemukan" });
     }
 
-    const newID = products.length > 0 ? products[products.length - 1].id + 1 : 1;
-
-    const newProduct = {
-        id : newID,
-        name : name,
-        price : Number(price),
-    };
-
-    products.push(newProduct);
-    return res.status(201).json(newProduct);
-}
+    return res.status(201).json({ name, price: Number(price) });
+};
 
 module.exports = {
     getAllProducts,
